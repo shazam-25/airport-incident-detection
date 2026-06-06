@@ -1,0 +1,19 @@
+# local dev info
+.lightning_studio
+.vs_code
+
+# Data
+data/
+
+# DLL files
+__pycache__/
+
+# Secrets
+.kaggle/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+src/utils.py
+
+src/__init__.py
