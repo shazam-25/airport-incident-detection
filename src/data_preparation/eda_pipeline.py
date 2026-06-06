@@ -99,7 +99,7 @@ def analyze_dataset_stream(stream_path, stream_name, class_names):
     plt.figure(figsize=(12,5))
     filtered_df_boxes = df_boxes[df_boxes['class_name'].isin(class_names)]
     class_order = pd.Series(filtered_df_boxes['class_name']).value_counts().index
-    sns.countplot(data=df_boxes, x='class_name', order=class_order, color='teal', legend=False, edgecolor='black')
+    sns.countplot(data=df_boxes, x='class_name', order=class_order, color='orange', legend=False, edgecolor='black')
     plt.title(f"Class Instance Distribution Profile - {stream_name} (Train Split)", fontweight='bold')
     plt.xlabel("Target Classification Name")
     plt.ylabel("Total Counted Instances")
