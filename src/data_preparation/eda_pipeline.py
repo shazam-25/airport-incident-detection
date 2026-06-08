@@ -9,7 +9,7 @@ from pathlib import Path
 sns.set_theme(style="whitegrid")
 plt.rcParams.update({'font.size': 11, 'axes.labelsize': 12, 'axes.titlesize':14})
 
-def analyze_dataset_stream(stream_path, stream_name, class_names):
+def analyze_dataset_stream(stream_path, stream_name, class_names, base_path):
     """
     TASK:
     Performs an in-depth spatial, statistical, and structural EDA
@@ -95,7 +95,16 @@ def analyze_dataset_stream(stream_path, stream_name, class_names):
 
     df_boxes = pd.DataFrame(all_box_records)
 
+    # Create or check if reports directory exists
+    report_dir = Path(base_path/"reports")
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create or check directory exists to store EDA plots of the streams
+    stream_dir = report_dir / stream_name
+    stream_dir.mkdir(parents=True, exist_ok=True)
+
     # 3. VISUALIZATION A: Class Distributions (Train Split)
+    filename = "class_distribution.png"
     plt.figure(figsize=(12,5))
     filtered_df_boxes = df_boxes[df_boxes['class_name'].isin(class_names)]
     class_order = pd.Series(filtered_df_boxes['class_name']).value_counts().index
@@ -106,8 +115,11 @@ def analyze_dataset_stream(stream_path, stream_name, class_names):
     plt.xticks(rotation=30, ha='right')
     plt.tight_layout()
     plt.show()
+    plt.savefig(os.path.join(stream_dir, filename))
+    plt.close()
 
     # 4. VISUALIZATION B: Scene Complexity Histogram (Objects per Frame)
+    # filename = 'histogram.jpg'
     # plt.figure(figsize=(12,2))
     # sns.histplot(train_boxes_per_image, binwidth=1, kde=True, color='teal', edgecolor='black')
     mean_val = float(np.mean(train_boxes_per_image))
@@ -118,30 +130,38 @@ def analyze_dataset_stream(stream_path, stream_name, class_names):
     # plt.legend()
     # plt.tight_layout()
     # plt.show()
+    # plt.savefig(os.path.join(stream_dir, filename))
+    # plt.close()
 
     # 5. VISUALIZATION C: 2D Spatial Anchoring Heatmap
-    # plt.figure(figsize=(6, 5))
-    # sns.kdeplot(data=df_boxes, x='x_center', y='y_center', fill=True, cmap='rocket', thresh=0.02, levels=12)
-    # plt.xlim(0, 1)
-    # plt.ylim(1, 0)  # Invert Y-axis to match pixel space (0,0 is top-left in computer vision)
-    # plt.title(f"Spatial Anchor Centroid Density Map - {stream_name}", fontweight='bold')
-    # plt.xlabel("Normalized Horizontal Frame Delta (X)")
-    # plt.ylabel("Normalized Vertical Frame Delta (Y)")
-    # plt.tight_layout()
-    # plt.show()
+    filename = "centroid_density_map.png"
+    plt.figure(figsize=(6, 5))
+    sns.kdeplot(data=df_boxes, x='x_center', y='y_center', fill=True, cmap='rocket', thresh=0.02, levels=12)
+    plt.xlim(0, 1)
+    plt.ylim(1, 0)  # Invert Y-axis to match pixel space (0,0 is top-left in computer vision)
+    plt.title(f"Spatial Anchor Centroid Density Map - {stream_name}", fontweight='bold')
+    plt.xlabel("Normalized Horizontal Frame Delta (X)")
+    plt.ylabel("Normalized Vertical Frame Delta (Y)")
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(os.path.join(stream_dir, filename))
+    plt.close()
 
     # 6. VISUALIZATION D: Object Scale Scatter Plot (Width vs Height)
-    # plt.figure(figsize=(12, 5))
-    # sns.scatterplot(data=df_boxes, x='width', y='height', hue='class_name', alpha=0.4, palette='tab10', edgecolor=None)
-    # plt.title(f"Geometric Object Scale Profile Aspect Ration Check - {stream_name}", fontweight='bold')
-    # plt.xlabel("Normalized Object Width (W)")
-    # plt.ylabel("Normalized Object Height (H)")
-    # plt.xlim(0, 1)
-    # plt.ylim(0, 1)
-    # plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title='Classes')
-    # plt.grid(True, linestyle=":", alpha=0.6)
-    # plt.tight_layout()
-    # plt.show()
+    filename = "geometric_object_scale_profile.png"
+    plt.figure(figsize=(13, 6))
+    sns.scatterplot(data=df_boxes, x='width', y='height', hue='class_name', alpha=0.4, s=15, palette='tab10', edgecolor=None)
+    plt.title(f"Geometric Object Scale Profile (Aspect Ratio Check) - {stream_name}", fontweight='bold', pad=15)
+    plt.xlabel("Normalized Object Width (W)", fontweight='semibold', labelpad=8)
+    plt.ylabel("Normalized Object Height (H)", fontweight='semibold', labelpad=8)
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.legend(bbox_to_anchor=(1.25, 1), loc='upper left', title='Classes', title_fontsize='11', fontsize='10', frameon=True, facecolor='white', edgecolor='#e0e0e0')
+    plt.grid(True, linestyle=":", alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(os.path.join(stream_dir, filename))
+    plt.close()
 
     # Log Macro Findings Summary
     print(f"\n🔍 INSIGHT SUMMARY FOR {stream_name.upper()}:")
