@@ -1,0 +1,90 @@
+# ==========================================
+# 📊 AIRPORT INCIDENT DETECTION DATA LAYOUT
+# ==========================================
+# Never commit raw, intermediate, or processed large media datasets
+data/raw/
+data/processed/
+data/sample_videos
+
+# Ignore local video sample clips used for pipeline validation/visualizers
+*.mp4
+*.avi
+*.mkv
+
+# ==========================================
+# 🧠 DEEP LEARNING FRAMEWORK MACHINE LEARNING
+# ==========================================
+# Exclude model weights checkpoints and exported artifacts (.pt, .pth, .onnx)
+*.pt
+*.pth
+*.onnx
+models/*.pt
+runs/
+.pytest_cache/
+
+# ==========================================
+# 🐍 PYTHON CORE ENVIRONMENT & DEPENDENCIES
+# ==========================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+# *.py[cod]
+# *$py.class
+
+# # C extensions
+# *.so
+
+# # Distribution / packaging
+# bin/
+# build/
+# develop-eggs/
+# dist/
+# downloads/
+# eggs/
+# .eggs/
+# lib/
+# lib64/
+# parts/
+# sdist/
+# var/
+# wheels/
+# share/python-wheels/
+# *.egg-info/
+# .installed.cfg
+# *.egg
+
+# # Virtual Environments
+# .venv/
+# venv/
+# ENV/
+# env/
+# pyenv/
+
+# ==========================================
+# 📓 JUPYTER NOTEBOOK WORKFLOWS
+# ==========================================
+.ipynb_checkpoints
+*/.ipynb_checkpoints/
+
+# ==========================================
+# 💻 IDE & OPERATING SYSTEM SPECIALS
+# ==========================================
+# macOS clutter files
+# .DS_Store
+# .AppleDouble
+# .LSOverride
+
+# # Windows thumbnail caches and desktop configurations
+# Thumbs.db
+# Thumbs.db:encryptable
+# ehthumbs.db
+# ehthumbs_vista.db
+# Desktop.ini
+
+# VS Code and Studio workspaces
+# .vscode/
+# .idea/
+# .studio/
+# .teamspace/
+.lightning_studio/
+.kaggle/
+.streamlit/

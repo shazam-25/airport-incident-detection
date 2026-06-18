@@ -1,0 +1,12 @@
+kaggle
+pathlib
+numpy
+pandas
+matplotlib
+seaborn
+ultralytics
+opencv-python 
+yt-dlp
+opencv-python-headless
+streamlit
+torchinfo

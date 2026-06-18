@@ -1,0 +1,19 @@
+names:
+- aircraft
+- baggage_truck
+- bridge_connected
+- bus
+- catering_truck
+- fuel_truck
+- fueling
+- ground_power
+- person
+- pushback_tractor
+- ramp_loader
+- rolling_stairway
+- stairway
+nc: 13
+path: /teamspace/studios/this_studio/airport-incident-detection/data/processed/turnaround
+test: test/images
+train: train/images
+val: val/images

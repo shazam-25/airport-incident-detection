@@ -1,0 +1,10 @@
+names:
+- Ear Protectors
+- Safety Vest
+- Without Ear Protectors
+- Without Safety Vest
+nc: 4
+path: /teamspace/studios/this_studio/airport-incident-detection/data/processed/ppe
+test: test/images
+train: train/images
+val: val/images
