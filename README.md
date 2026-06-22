@@ -11,6 +11,7 @@ An M.Tech Final Year Implementation Project demonstrating real-time incident det
 
 ## 📁 Repository Directory Structure
 Refer to the layout map below for module organization:
+```text
 airport-incident-detection/
 ├── configs/
 │   ├── turnaround.yaml          # Generated dynamically via data pipeline
@@ -45,6 +46,7 @@ airport-incident-detection/
 │       └── debug_overfit.py     # Renamed from overfitting_test.py
 ├── requirements.txt
 └── README.md
+```
 
 ## ⚙️ Core Operational Dependencies
 Install the required system dependency matrices prior to executing training or inference loops:
