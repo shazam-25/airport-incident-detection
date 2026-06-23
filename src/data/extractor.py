@@ -20,7 +20,7 @@ def fetch_stream_dataset(raw_dir):
         "ppe": "shazam0k/airport-ppe-dataset",
         "fod": "kilogrand/foreign-object-debris-in-airports-fod-a-dataset"
     }
-    print("="*60 + "\n▶️ Starting Stream Data Extraction...\n" + "="*60)
+    print("="*70 + "\n▶️ Starting Stream Data Extraction...\n" + "="*70)
     # ------------------------
     # 2. DOWNLOAD & UNZIP
     # ------------------------

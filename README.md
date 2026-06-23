@@ -44,8 +44,8 @@ airport-incident-detection/
 │   └── training/
 │       ├── __init__.py
 │       └── debug_overfit.py     # Renamed from overfitting_test.py
-├── requirements.txt
-└── README.md
+├── requirements.txt             # Explicit dependency list
+└── README.md                    # Technical project blueprint documentation
 ```
 
 ## ⚙️ Core Operational Dependencies

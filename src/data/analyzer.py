@@ -1,4 +1,5 @@
 # Libraries
+import os
 import yaml
 from pathlib import Path
 import pandas as pd
@@ -183,9 +184,40 @@ def plot_processed_stream(processed_stream_path, class_list=None):
                 
         # Draw on subplot axis canvas
         axes[i].imshow(img)
-        axes[i].set_title(f"{img_path.name}", fontsize=10)
+        axes[i].set_title(f"sample_{i+1}", fontsize=12)
         axes[i].axis('off')
         
     plt.suptitle(f"Sanity Check Split Verification: {Path(processed_stream_path).name.upper()} Stream", fontsize=14, weight='bold')
     plt.tight_layout()
     plt.show()
+
+# ===========================
+# E. EXTRACT SPLIT METRICS
+# ===========================
+def extract_split_metrics(proc_dir, split_name):
+    """
+    Parses bounding box text files for a specific split to extract spatial distributions.
+    """
+    records = []
+    tasks = ['turnaround', 'ppe', 'fod']
+
+    for task_idx, task in enumerate(tasks):
+        labels_path = os.path.join(proc_dir, task, split_name, 'labels')
+        if not os.path.exists(labels_path):
+            continue
+
+        for lbl_file in os.listdir(labels_path):
+            if lbl_file.endswith('.txt'):
+                with open(os.path.join(labels_path, lbl_file), 'r') as f:
+                    for line in f.readlines():
+                        parts = line.strip().split()
+                        if len(parts) == 5:
+                            cls_id, x, y, w, h = map(float, parts)
+                            records.append({
+                                'split': split_name,
+                                'task_name': task,
+                                'box_area': w * h,
+                                'aspect_ratio': w / (h + 1e-6)
+                            })
+
+    return pd.DataFrame(records)

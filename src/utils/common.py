@@ -68,9 +68,9 @@ def file_counter(dir_path, if_split=True) -> None:
 
         # Display labels found depending on their type context
         if voc_lbl_count > 0:
-            print(f"    └── Pascal VOC Labels (.xml): {voc_lbl_count}")
+            print(f"    └── Pascal VOC Label files (.xml): {voc_lbl_count}")
         if yolo_lbl_count > 0:
-            print(f"    └── Text Format Labels (.txt): {yolo_lbl_count}")
+            print(f"    └── Text Format Label files (.txt): {yolo_lbl_count}")
         if yolo_lbl_count == 0 and voc_lbl_count == 0:
             print(f"    └── ⚠️ WARNING: No matching annotation files detected!")
         

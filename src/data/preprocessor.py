@@ -102,9 +102,7 @@ def apply_augmentation(image, bboxes):
 def stratified_split_records(parsed_records, target_ratios=(0.7, 0.15, 0.15)):
     """ Executes iterative stratification across multi-label bounding box distributions
     to ensure perfectly balanced train/val/test class breakdowns """
-    print("\n⌛ Initializing Iterative Multi-Label Stratification Engine...")
-
-    # 1. Map out which images contain which classes
+        # 1. Map out which images contain which classes
     class_to_img_indices = defaultdict(list)
     img_to_classes = {}
 
@@ -165,8 +163,8 @@ def stratified_split_records(parsed_records, target_ratios=(0.7, 0.15, 0.15)):
 # ---STREAM PREPROCESSING PIPELINE---
 # =====================================
 def execute_processing_pipeline(stream_name, raw_root, proc_root, fod_classes=None):
-    print("="*70)
-    print(f"🚩 PROCESSING STREAM IMAGES: {stream_name.upper()}\n" + "="*70)
+    print("\n" + "="*75)
+    print(f"🚩 PROCESSING STREAM IMAGES: {stream_name.upper()}\n" + "="*75)
     raw_dir = Path(raw_root) / stream_name
     proc_dir = Path(proc_root) / stream_name
 
@@ -242,15 +240,16 @@ def execute_processing_pipeline(stream_name, raw_root, proc_root, fod_classes=No
     # PHASE 2: DISPLAY GEOMETRIC EXPLORATORY METRICS
     # -----------------------------------------------
     if parsed_records:
-        print(f"--- 📊 {stream_name.upper()} STREAM GEOMETRIC ANALYSIS REPORT ---")
+        print(f"--- 📊 {stream_name.upper()} STREAM GEOMETRIC ANALYSIS REPORT (RAW) ---")
         print(f"    Total Valid Image Assets    : {len(parsed_records)}")
         print(f"    Mean Image Width            : {np.mean(native_widths):.1f} px (Min: {np.min(native_widths)}, Max: {np.max(native_widths)})")
         print(f"    Mean Image Height           : {np.mean(native_heights):.1f} px (Min: {np.min(native_heights)}, Max: {np.max(native_heights)})")
         print(f"    Bounding Box Area Profile   : Mean: {np.mean(relative_box_areas)*100:.2f}% | Max Object Size: {np.max(relative_box_areas)*100:.2f}% of canvas")
-
+        print("-"*60)
     # -----------------------------------------------------------------
     # PHASE 3: STRATIFIED SPLITTING & EXPORTING
     # -----------------------------------------------------------------
+    print("--- ⌛ IMAGE AUGMENTATION & STRATIFICATION SPLIT ---")
     splits = stratified_split_records(parsed_records)
 
     for split_key, records in splits.items():
@@ -259,7 +258,7 @@ def execute_processing_pipeline(stream_name, raw_root, proc_root, fod_classes=No
         out_img_dir.mkdir(parents=True, exist_ok=True)
         out_lbl_dir.mkdir(parents=True, exist_ok=True)
 
-        split_class_counter = Counter()
+        # split_class_counter = Counter()
         for idx, (img_path, bboxes) in enumerate(records):
             img = cv2.imread(str(img_path))
             resized_img = cv2.resize(img, (640, 640), interpolation=cv2.INTER_LINEAR)
@@ -270,7 +269,7 @@ def execute_processing_pipeline(stream_name, raw_root, proc_root, fod_classes=No
             with open(out_lbl_dir / f"{orig_stem}.txt", 'w') as f:
                 for box in bboxes:
                     f.write(f"{box[0]} {box[1]:.6f} {box[2]:.6f} {box[3]:.6f} {box[4]:.6f}\n")
-                    split_class_counter[box[0]] += 1
+                    # split_class_counter[box[0]] += 1
             
             if split_key == 'train':
                 aug_img, aug_boxes = apply_augmentation(resized_img, bboxes)
@@ -278,9 +277,13 @@ def execute_processing_pipeline(stream_name, raw_root, proc_root, fod_classes=No
                 with open(out_lbl_dir / f"{orig_stem}_aug.txt", 'w') as f:
                     for box in aug_boxes:
                         f.write(f"{box[0]} {box[1]:.6f} {box[2]:.6f} {box[3]:.6f} {box[4]:.6f}\n")
-                        
-        print(f"📂 [{split_key.upper()}] complete. Saved {len(records)} images. \n      Class IDs distribution: {dict(split_class_counter)}")
-        print("-"*70)
+        
+        if split_key == 'train':
+            print(f"    🔶 [{split_key.upper()}] split augmentation complete.")             
+        
+        print(f"    📂 [{split_key.upper()}] split complete. Saved {len(records)} [640x640] resized images.")
+        # \n      Class IDs distribution: {dict(split_class_counter)}")
+        # print("-"*60)
         
 
 # ==================================
@@ -288,7 +291,6 @@ def execute_processing_pipeline(stream_name, raw_root, proc_root, fod_classes=No
 # ==================================
 def generate_yaml_profiles(proc_dir, stream_name, class_names):
     """ Generates unified config file formats with accurate structural path mappings """
-    print(f"\n⌛ Generating YAML config for {stream_name.upper()}...")
     proc_path = Path(proc_dir)
     config_dir = proc_path / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
@@ -306,4 +308,6 @@ def generate_yaml_profiles(proc_dir, stream_name, class_names):
         yaml_path = config_dir / filename
         with open(yaml_path, 'w') as f:
             yaml.dump(structure, f, default_flow_style=False)
-            print(f"    ✅ Created configuration map {filename}")
+        stream_name = filename.replace('.yaml', '')
+        print(f"✅ [{stream_name.upper()}] Configuration map : {filename}")
+
