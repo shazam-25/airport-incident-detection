@@ -24,11 +24,13 @@ def extract_classnames_from_yaml(yaml_path):
             class_names = data_config.get('names', [])
             # Handle directory style class formats {0:'class A', 1:'class B'}
             if isinstance(class_names, dict):
-                class_names = {class_names[i] for i in sorted(class_names.keys())}
+                # class_names = {class_names[i] for i in sorted(class_names.keys())}
+                class_names = [class_names[i] for i in sorted(class_names.keys())]
             return class_names
         
         except yaml.YAMLError as exc:
             print(f"❌ Error reading YAML file: {exc}")
+            return []
 
 # ==============================
 # B. GET OBJECT CLASS DETAILS

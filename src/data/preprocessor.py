@@ -175,7 +175,8 @@ def execute_processing_pipeline(stream_name, raw_root, proc_root, fod_classes=No
     fod_map = {name: idx for idx, name in enumerate(fod_classes)} if fod_classes else {}
     
     if stream_name == 'fod':
-        print(f"🎯 Aligned FOD Mapping Matrix: {fod_map}")
+        print(f"🏗️ ALIGN FOD MAPPING MATRIX - Complete")
+        # {fod_map}")
 
     raw_img_dir = raw_dir / "images"
     raw_lbl_dir = raw_dir / "labels"
