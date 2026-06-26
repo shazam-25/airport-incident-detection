@@ -52,3 +52,7 @@ airport-incident-detection/
 Install the required system dependency matrices prior to executing training or inference loops:
 ```bash
 pip install -r requirements.txt
+```
+Launch TensorBoard to monitor the validation curves
+```bash
+tensorboard --logdir=./models/logs

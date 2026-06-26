@@ -21,6 +21,8 @@ data/sample_videos
 models/*.pt
 runs/
 .pytest_cache/
+models/logs
+models/weights
 
 # ==========================================
 # 🐍 PYTHON CORE ENVIRONMENT & DEPENDENCIES

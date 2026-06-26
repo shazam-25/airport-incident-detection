@@ -39,6 +39,17 @@ class MultiTaskAirportNet(nn.Module):
             nn.SiLU(),
             nn.Conv2d(128, 4 + num_ppe, kernel_size=1)
         )
+        # Inside src/model.py -> MultiTaskAirportNet.__init__()
+        # ---- Try----
+        # self.ppe_head = nn.Sequential(
+        #     nn.Conv2d(128, 256, kernel_size=3, padding=1),  # Increase channel width
+        #     nn.BatchNorm2d(256),
+        #     nn.SiLU(),
+        #     nn.Conv2d(256, 128, kernel_size=3, padding=1),  # Extra refinement layer
+        #     nn.BatchNorm2d(128),
+        #     nn.SiLU(),
+        #     nn.Conv2d(128, 4 + num_ppe, kernel_size=1)
+        # )
 
         # 4. Head 3: FOD High-Resolution Tiny-Object Head (31 classes)
         self.fod_head = nn.Sequential(
