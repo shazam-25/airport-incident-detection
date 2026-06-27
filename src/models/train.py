@@ -9,7 +9,7 @@ from data.dataset import AirportMultiTaskDataset, multi_task_collate_fn
 from models.model import MultiTaskAirportNet
 from models.losses import MultiTaskLoss
 
-# 🟢 Add GradScaler to handle lower precision gradients smoothly
+# GradScaler handles lower precision gradients smoothly
 scaler = torch.amp.GradScaler('cuda')
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
@@ -21,21 +21,14 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
 
     pbar = tqdm(dataloader, desc="  Training Progress")
     for batch in pbar:
-        # if short_sanity_check and batch_idx >= 5:
-        #     print(f"\n🎯 Sanity Check: Truncating epoch early at {batch_idx} batches.")
-        #     break
-
         images = batch['images'].to(device)
-
         optimizer.zero_grad()
-        pred = model(images)
 
-        total_loss, l_t, l_p, l_f = criterion(pred, batch)
+        # 🟢 FIX 1: Wrap forward pass in mixed precision context without duplicate calls
+        with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+            pred = model(images)
+            total_loss, l_t, l_p, l_f = criterion(pred, batch)
 
-        # Guard against zero-loss backward passes if a task is missing from the batch
-        # total_loss.backward()
-        # optimizer.step()
-        # 🟢 Use scaler to handle backward pass and step optimization
         scaler.scale(total_loss).backward()
         scaler.step(optimizer)
         scaler.update()
@@ -61,8 +54,10 @@ def validate(model, dataloader, criterion, device):
     with torch.no_grad():
         for batch in dataloader:
             images = batch['images'].to(device)
-            preds = model(images)
-            total_loss, _, _, _ = criterion(preds, batch)
+            # 🟢 FIX 2: Wrapped validation loop in autocast and removed duplicate calls
+            with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                preds = model(images)
+                total_loss, _, _, _ = criterion(preds, batch)
             running_loss += total_loss.item()
     
     return running_loss / num_batches
@@ -72,13 +67,12 @@ def model_train_phase1(proc_dir):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"🚀 Initializing Full-Scale Training Pipeline on Target: {device}")
 
-    # Define path dynamically relative to this script to guarantee it hits root/models/logs
-    current_script_dir = os.path.dirname(os.path.abspath(__file__)) # points to src/models/
-    project_root = os.path.abspath(os.path.join(current_script_dir, "../../")) # moves up to project root
-    target_log_dir = os.path.join(project_root, "models", "logs")
-    os.makedirs(target_log_dir, exist_ok=True) # Ensure folder exists safely
+    current_script_dir = os.path.dirname(os.path.abspath(__file__)) 
+    project_root = os.path.abspath(os.path.join(current_script_dir, "../../")) 
+    
+    target_log_dir = os.path.abspath(os.path.join(project_root, "models", "logs", "phase1")) 
+    os.makedirs(target_log_dir, exist_ok=True) 
 
-    # Initialize TensorBoard Logger
     writer = SummaryWriter(log_dir=target_log_dir)
 
     # 1. Ingest Full Datasets
@@ -88,23 +82,19 @@ def model_train_phase1(proc_dir):
     train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=4, pin_memory=True, collate_fn=multi_task_collate_fn)
     val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=4, pin_memory=True, collate_fn=multi_task_collate_fn)
 
-    # 2. Setup Network and Optimization Metrics (Phase 1 Settings)
+    # 2. Setup Network and Optimization Metrics
     model = MultiTaskAirportNet().to(device)
-    # Compile model graph to unlock faster kernel execution paths
-    # model = torch.compile(model) 
     optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=15)
 
-    # Loss coefficients configured to counter class balancing discrepencies
-    criterion = MultiTaskLoss(alpha=1.5, beta=1.5, gamma=0.5) # change beta = 3.5 & gamma = 0.1
+    criterion = MultiTaskLoss(alpha=1.5, beta=1.5, gamma=0.5)
 
     best_val_loss = float('inf')
-    epochs = 5 # Original - 15
+    epochs = 20 
 
     for epoch in range(1, epochs + 1):
         print(f"\n📅 Epoch [{epoch}/{epochs}]")
 
-        # Execute training and validation loops
         train_loss, l_t, l_p, l_f = train_one_epoch(model, train_loader, criterion, optimizer, device)
         val_loss = validate(model, val_loader, criterion, device)
         scheduler.step()
@@ -112,7 +102,6 @@ def model_train_phase1(proc_dir):
         print(f"    📊 Summary -> Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}")
         print(f"    └─ Heads Breakdown -> Turnaround: {l_t:.4f} | PPE: {l_p:.4f} | FOD: {l_f:.4f}")
 
-        # Log values to TensorBoard for evaluation profiles
         writer.add_scalar("Loss/Train_Total", train_loss, epoch)
         writer.add_scalar("Loss/Val_Total", val_loss, epoch)
         writer.add_scalar("Loss/Head_Turnaround", l_t, epoch)
@@ -122,7 +111,9 @@ def model_train_phase1(proc_dir):
         # Save weights file checkpoint
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            checkpoint_path = os.path.join(project_root, "models", "checkpoint_v1.pt")
+            model_weights_repo = os.path.abspath(os.path.join(project_root, "models", "weights"))
+            os.makedirs(model_weights_repo, exist_ok=True)
+            checkpoint_path = os.path.join(model_weights_repo, "checkpoint_v1.pt") 
             torch.save(model.state_dict(), checkpoint_path)
             print(" 💾 New optimal validation milestone secured. Checkpoint saved.")
     
@@ -130,9 +121,77 @@ def model_train_phase1(proc_dir):
     print("\n☑️ Training Sequence Concluded Successfully.")
 
 
-# def model_train_sanity_fn(proc_dir):
-#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#     print(f"🚀 Initializing Full-Scale Training Pipeline on Target: {device}")
+def model_train_phase2(proc_dir):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"🚀 Initializing Phase 2: Targeted FOD Fine-Tuning on Target: {device}")
 
-#     RUN_SANITY_CHECK = True
+    current_script_dir = os.path.dirname(os.path.abspath(__file__)) 
+    project_root = os.path.abspath(os.path.join(current_script_dir, "../../")) 
+    
+    target_log_dir = os.path.abspath(os.path.join(project_root, "models", "logs", "phase2"))
+    os.makedirs(target_log_dir, exist_ok=True) 
 
+    writer = SummaryWriter(log_dir=target_log_dir)
+
+    # 1. Ingest Full Datasets
+    train_dataset = AirportMultiTaskDataset(root_dir=proc_dir, split="train", img_size=640)
+    val_dataset = AirportMultiTaskDataset(root_dir=proc_dir, split="val", img_size=640)
+
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=4, pin_memory=True, collate_fn=multi_task_collate_fn)
+    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=4, pin_memory=True, collate_fn=multi_task_collate_fn)
+
+    # 2. Setup Network and Restore Phase 1 Pre-trained Weights
+    model = MultiTaskAirportNet().to(device)
+    # 🟢 FIX 3: Fixed the folder restoration path to look inside models/weights/
+    phase1_weights_path = os.path.abspath(os.path.join(project_root, "models", "weights", "checkpoint_v1.pt"))
+
+    if os.path.exists(phase1_weights_path):
+        model.load_state_dict(torch.load(phase1_weights_path, map_location=device))
+        print("💾 Phase 1 Base Weights Successfully Restored.")
+    else:
+        print("⚠️ Warning: Phase 1 weights checkpoint file not found. Running baseline setup instead.")
+
+    # 3. Structural Parameter Freezing
+    print("🔒 Locking Down Turnaround and PPE Branch Weights...")
+    for param in model.turnaround_head.parameters():
+        param.requires_grad = False
+    for param in model.ppe_head.parameters():
+        param.requires_grad = False
+    
+    for param in model.fod_head.parameters():
+        param.requires_grad = True
+    
+    # 4. Hyperparameter Adaptation for Micro-Object Optimization
+    optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4, weight_decay=1e-4)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+
+    # 🟢 COMPLETE: Configured Inverted Coefficients Matrix (FOD focus)
+    criterion = MultiTaskLoss(alpha=0.0, beta=0.0, gamma=2.0)
+
+    best_val_loss = float('inf')
+    epochs = 10  
+
+    # 🟢 COMPLETE: Phase 2 Execution Loop and Metric Logging Block
+    for epoch in range(1, epochs + 1):
+        print(f"\n📅 Phase 2 - Epoch [{epoch}/{epochs}]")
+
+        train_loss, l_t, l_p, l_f = train_one_epoch(model, train_loader, criterion, optimizer, device)
+        val_loss = validate(model, val_loader, criterion, device)
+        scheduler.step()
+
+        print(f"    📊 Phase 2 Summary -> Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}")
+        print(f"    └─ Isolated Head Focus -> FOD Loss: {l_f:.4f}")
+
+        writer.add_scalar("Loss/Train_Total", train_loss, epoch)
+        writer.add_scalar("Loss/Val_Total", val_loss, epoch)
+        writer.add_scalar("Loss/Head_FOD", l_f, epoch)
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            model_weights_repo = os.path.abspath(os.path.join(project_root, "models", "weights"))
+            checkpoint_path = os.path.join(model_weights_repo, "checkpoint_v2.pt")
+            torch.save(model.state_dict(), checkpoint_path)
+            print(" 💾 Phase 2 optimal milestone secured. Checkpoint saved.")
+
+    writer.close()
+    print("\n☑️ Phase 2 Fine-Tuning Sequence Concluded Successfully.")

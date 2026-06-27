@@ -24,6 +24,7 @@ class MultiTaskAirportNet(nn.Module):
             param.requires_grad = False
         print(" Locked early backbone layers successfully.")
 
+
         # 2. Head 1: Turnaround Detection & Tracking Anchors (13 classes)
         self.turnaround_head = nn.Sequential(
             nn.Conv2d(128, 128, kernel_size=3, padding=1),
@@ -33,23 +34,23 @@ class MultiTaskAirportNet(nn.Module):
         )
 
         # 3. Head 2: PPE Compliance Multi-Class Head (4 classes)
-        self.ppe_head = nn.Sequential(
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.SiLU(),
-            nn.Conv2d(128, 4 + num_ppe, kernel_size=1)
-        )
-        # Inside src/model.py -> MultiTaskAirportNet.__init__()
-        # ---- Try----
         # self.ppe_head = nn.Sequential(
-        #     nn.Conv2d(128, 256, kernel_size=3, padding=1),  # Increase channel width
-        #     nn.BatchNorm2d(256),
-        #     nn.SiLU(),
-        #     nn.Conv2d(256, 128, kernel_size=3, padding=1),  # Extra refinement layer
+        #     nn.Conv2d(128, 128, kernel_size=3, padding=1),
         #     nn.BatchNorm2d(128),
         #     nn.SiLU(),
         #     nn.Conv2d(128, 4 + num_ppe, kernel_size=1)
         # )
+        # Inside src/model.py -> MultiTaskAirportNet.__init__()
+        # ---- Try----
+        self.ppe_head = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),  # Increase channel width
+            nn.BatchNorm2d(256),
+            nn.SiLU(),
+            nn.Conv2d(256, 128, kernel_size=3, padding=1),  # Extra refinement layer
+            nn.BatchNorm2d(128),
+            nn.SiLU(),
+            nn.Conv2d(128, 4 + num_ppe, kernel_size=1)
+        )
 
         # 4. Head 3: FOD High-Resolution Tiny-Object Head (31 classes)
         self.fod_head = nn.Sequential(
@@ -162,7 +163,7 @@ class MultiTaskAirportNet(nn.Module):
 #             "fod": self.fod_head(features)
 #         }
 
-
+# ---- YOLO ----
 # class MultiHeadAirportYOLO(nn.Module):
 #     def __init__(self, num_turnaround_cls=13, num_ppe_cls=4):
 #         super(MultiHeadAirportYOLO, self).__init__()

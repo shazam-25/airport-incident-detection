@@ -21,10 +21,10 @@ class MultiTaskLoss(nn.Module):
         # Fallback trick: Find the first available GPU prediction tensor to read the device
         device = next(iter(preds.values())).device
         
-        device = target_batch['task_ids'].device
-        device = preds['turnaround'].device
-        device = preds['ppe'].device
-        device = preds['fod'].device
+        # device = target_batch['task_ids'].device
+        # device = preds['turnaround'].device
+        # device = preds['ppe'].device
+        # device = preds['fod'].device
 
         # loss_turnaround = torch.tensor(0.0, device=target_batch['task_ids'].device)
         # loss_ppe = torch.tensor(0.0, device=target_batch['task_ids'].device)
@@ -34,6 +34,8 @@ class MultiTaskLoss(nn.Module):
         loss_fod = torch.tensor(0.0, device=device)
 
         packed_labels = target_batch['labels'].to(device)
+
+        count_t, count_p, count_f = 0, 0, 0
 
         # Loop through each image in the batch to calculate true spatial differences
         for img_idx, task_id in enumerate(target_batch['task_ids']):
@@ -53,6 +55,7 @@ class MultiTaskLoss(nn.Module):
                 # 1. Grab the current GPU device dynamically
                 # device = preds['turnaround'].device
                 # Slice model output to extract bounding boxes vs class predictions
+                count_t += 1
                 pred_raw = preds['turnaround'][img_idx].mean(dim=[1, 2])    # Reduce spatial grid to match targets
                 # 2. Push target tensors to the exact same GPU device
                 box_target = true_boxes[0][:4].to(device)
@@ -63,6 +66,7 @@ class MultiTaskLoss(nn.Module):
 
             elif task_id == 1: # PPE Branch
                 # device = preds['ppe'].device
+                count_p += 1
                 pred_raw = preds['ppe'][img_idx].mean(dim=[1, 2])
 
                 box_target = true_boxes[0][:4].to(device)
@@ -73,6 +77,7 @@ class MultiTaskLoss(nn.Module):
 
             elif task_id == 2: # FOD Branch
                 # device = preds['fod'].device
+                count_f += 1
                 pred_raw = preds['fod'][img_idx].mean(dim=[1, 2])
 
                 box_target = true_boxes[0][:4].to(device)
@@ -80,7 +85,13 @@ class MultiTaskLoss(nn.Module):
 
                 loss_fod += self.bbox_loss_fn(pred_raw[:4], box_target)
                 loss_fod += self.cls_loss_fn(pred_raw[4:35].unsqueeze(0), class_target)
- 
+        
+        # 🟢 Normalize by active task sample counts to counteract the data imbalance
+        if count_t > 0: loss_turnaround = loss_turnaround / count_t
+        if count_p > 0: loss_ppe = loss_ppe / count_p
+        if count_f > 0: loss_fod = loss_fod / count_f
+
+
         # Separate head gradients cleanly based on the task IDs in the batch
         # for idx, task_id in enumerate(target_batch['task_ids']):
         #     if task_id == 0:
