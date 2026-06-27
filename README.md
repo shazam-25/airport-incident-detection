@@ -55,4 +55,4 @@ pip install -r requirements.txt
 ```
 Launch TensorBoard to monitor the validation curves
 ```bash
-tensorboard --logdir=./models/logs
+tensorboard --logdir=models/logs 
